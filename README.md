@@ -3,14 +3,15 @@
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
 
-Status: scaffold - the analyzers below are queued in the ai-ecosystem Night
-Shift queue (PROJECT-GENESIS.md section 9) and land one PR at a time.
+Status: analyzers land one PR at a time via the ai-ecosystem Night Shift queue
+(PROJECT-GENESIS.md section 9).
 
-## Planned analyzers
+## Analyzers
 
-1. **Bug-hotspot analyzer** - churn x complexity over `git log`; the files
-   that change often AND are complex are where bugs cluster.
-2. **Duplicated-logic detector** - token-shingle similarity across files.
+1. **Bug-hotspot analyzer** (`src/autocto/hotspots.py`) - churn x complexity
+   over `git log`; the files that change often AND are complex are where
+   bugs cluster. `analyze_repo(repo_dir)` ranks a real repo's tracked files.
+2. **Duplicated-logic detector** (planned) - token-shingle similarity across files.
 3. **Maintenance-cost estimator** - size x churn x dependency fan-in, with a
    documented formula.
 4. **Architectural-debt report** - import cycles, god files, layering
