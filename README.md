@@ -1,5 +1,8 @@
 # autocto
 
+[![CI](https://github.com/syzayd/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/syzayd/autocto/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
 
