@@ -3,14 +3,14 @@
 [![CI](https://github.com/syzayd/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/syzayd/autocto/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-31%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen)](tests/)
 
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
 
 Status: analyzers land one PR at a time via the ai-ecosystem Night Shift queue
-(PROJECT-GENESIS.md section 9). Two of five are shipped (hotspots,
-duplicates); the rest are tracked in [Roadmap](#roadmap).
+(PROJECT-GENESIS.md section 9). Three of five are shipped (hotspots,
+duplicates, maintenance-cost); the rest are tracked in [Roadmap](#roadmap).
 
 ## Quickstart
 
@@ -43,8 +43,9 @@ output, and [Architecture](#architecture) for what each module returns.
 2. **Duplicated-logic detector** (`src/autocto/duplicates.py`) - token-shingle
    (Jaccard) similarity across files; `analyze_repo(repo_dir)` ranks a real repo's
    file pairs by duplication risk.
-3. **Maintenance-cost estimator** - size x churn x dependency fan-in, with a
-   documented formula.
+3. **Maintenance-cost estimator** (`src/autocto/maintenance_cost.py`) - size x
+   churn x dependency fan-in; `analyze_repo(repo_dir)` ranks a real repo's
+   tracked files by `size x churn x (1 + fan_in)`.
 4. **Architectural-debt report** - import cycles, god files, layering
    violations.
 5. **Migration-plan generator** - turns a redesign proposal into an ordered,
@@ -55,7 +56,7 @@ testable without API keys.
 
 ## Demo
 
-Real, captured output - not invented numbers. Two runs below, both against
+Real, captured output - not invented numbers. Three runs below, all against
 repos checked out locally at the time this README was written.
 
 ### Bug-hotspot analyzer against `recall` (a separate, actively developed repo
@@ -114,6 +115,36 @@ autocto's own two analyzer modules and their tests share no duplicated
 5-token shingles above the default threshold - a correct negative result on a
 small, deliberately non-duplicated codebase, not a bug.
 
+### Maintenance-cost estimator against `recall` (same repo as the hotspot demo,
+for a like-for-like comparison)
+
+Command:
+
+```bash
+python -c "
+from pathlib import Path
+from autocto.maintenance_cost import analyze_repo
+
+for cost in analyze_repo(Path('/path/to/recall'))[:5]:
+    print(cost)
+"
+```
+
+Output:
+
+```
+MaintenanceCost(path='frontend/src/App.jsx', size=772, churn=29, fan_in=1, cost=44776)
+MaintenanceCost(path='backend/main.py', size=461, churn=14, fan_in=1, cost=12908)
+MaintenanceCost(path='backend/memory.py', size=262, churn=4, fan_in=0, cost=1048)
+MaintenanceCost(path='backend/live.py', size=125, churn=4, fan_in=1, cost=1000)
+MaintenanceCost(path='eval/benchmark.py', size=309, churn=3, fan_in=0, cost=927)
+```
+
+`App.jsx` tops both this ranking and the hotspot one - it is large, the
+most-changed file in the repo, AND imported elsewhere, which is exactly what
+"maintenance cost" should mean: not just churn x complexity, but the size of
+the file and the blast radius of touching it.
+
 ## Architecture
 
 One line per planned analyzer, numbered to match [Analyzers](#analyzers)
@@ -130,7 +161,15 @@ above:
    `find_duplicates` wired together by
    `analyze_repo(repo_dir, *, extensions=..., shingle_size=..., threshold=...)`,
    which returns `list[DuplicatePair]` (`path_a`, `path_b`, `similarity`).
-3. Maintenance-cost estimator - not yet built. See [Roadmap](#roadmap).
+3. `src/autocto/maintenance_cost.py` - size (line count) x churn (reuses
+   `hotspots.parse_numstat_log`) x dependency fan-in (import-statement
+   name-matching against file stems, Python and JS/TS). Pure functions
+   `count_lines`, `extract_referenced_names`, `compute_fan_in`,
+   `estimate_costs` (formula: `size x churn x (1 + fan_in)` - see that
+   function's docstring for why `1 + fan_in`, not bare `fan_in`) wired
+   together by `analyze_repo(repo_dir, *, extensions=..., git_log_fn=...)`,
+   which returns `list[MaintenanceCost]` (`path`, `size`, `churn`, `fan_in`,
+   `cost`).
 4. Architectural-debt report - not yet built. See [Roadmap](#roadmap).
 5. Migration-plan generator - not yet built. See [Roadmap](#roadmap).
 
@@ -145,8 +184,6 @@ detail.
 Tier 4 items in the ai-ecosystem Night Shift queue (PROJECT-GENESIS.md
 section 9), still open and not part of this repo yet:
 
-- **#30 Maintenance-cost estimator** - size x churn x dependency fan-in,
-  with a documented formula.
 - **#31 Architectural-debt report** - import cycles, god files, layering
   violations.
 - **#32 Migration-plan generator** - turns a redesign proposal into an
