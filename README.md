@@ -3,14 +3,15 @@
 [![CI](https://github.com/syzayd/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/syzayd/autocto/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-77%20passing-brightgreen)](tests/)
 
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
 
 Status: analyzers land one PR at a time via the ai-ecosystem Night Shift queue
-(PROJECT-GENESIS.md section 9). Three of five are shipped (hotspots,
-duplicates, maintenance-cost); the rest are tracked in [Roadmap](#roadmap).
+(PROJECT-GENESIS.md section 9). Four of five are shipped (hotspots,
+duplicates, maintenance-cost, architectural-debt); the rest are tracked in
+[Roadmap](#roadmap).
 
 ## Quickstart
 
@@ -46,8 +47,12 @@ output, and [Architecture](#architecture) for what each module returns.
 3. **Maintenance-cost estimator** (`src/autocto/maintenance_cost.py`) - size x
    churn x dependency fan-in; `analyze_repo(repo_dir)` ranks a real repo's
    tracked files by `size x churn x (1 + fan_in)`.
-4. **Architectural-debt report** - import cycles, god files, layering
-   violations.
+4. **Architectural-debt report** (`src/autocto/architectural_debt.py`) - three
+   independent signals over one same-repo import graph: import cycles (Tarjan
+   strongly-connected components), god files (large AND highly-connected),
+   and layering violations (only checked when the caller supplies an
+   explicit layer order - see [Architecture](#architecture)).
+   `analyze_repo(repo_dir)` returns all three for a real repo.
 5. **Migration-plan generator** - turns a redesign proposal into an ordered,
    verifiable migration plan.
 
@@ -145,6 +150,54 @@ most-changed file in the repo, AND imported elsewhere, which is exactly what
 "maintenance cost" should mean: not just churn x complexity, but the size of
 the file and the blast radius of touching it.
 
+### Architectural-debt report against `personal-llm` (a bigger, more layered
+codebase than recall or autocto itself - more likely to actually show
+something)
+
+Command:
+
+```bash
+python -c "
+from pathlib import Path
+from autocto.architectural_debt import analyze_repo
+
+report = analyze_repo(Path('/path/to/personal-llm'))
+print(f'{len(report.cycles)} import cycle(s)')
+print(f'{len(report.god_files)} god file(s)')
+for god_file in report.god_files:
+    print(' ', god_file)
+
+layered = analyze_repo(
+    Path('/path/to/personal-llm'),
+    layer_order=['router', 'memory', 'rag', 'interfaces'],
+)
+print(f'{len(layered.layering_violations)} layering violation(s) under router -> memory -> rag -> interfaces')
+"
+```
+
+Output:
+
+```
+0 import cycle(s)
+3 god file(s)
+  GodFile(path='src/personal_llm/memory/store.py', size=287, fan_in=14, fan_out=1)
+  GodFile(path='src/personal_llm/interfaces/cli.py', size=302, fan_in=1, fan_out=11)
+  GodFile(path='src/personal_llm/interfaces/api.py', size=257, fan_in=0, fan_out=9)
+0 layering violation(s) under router -> memory -> rag -> interfaces
+```
+
+Real, captured, honest results, including the zeroes - same "a clean result
+is a correct result, not a suppressed one" rule duplicates.py's demo already
+follows. `personal-llm` has no import cycles and no layering violations under
+that ordering (its `router` package genuinely never reaches up into
+`interfaces`, by inspection of the real source), which is a legitimate,
+useful thing to report about a codebase: this project's dependency
+discipline is holding. `memory/store.py` is flagged as a god file because
+fourteen other files reference it by name (the SQLite-backed
+`MemoryStore` class is the one shared persistence layer) on top of nearly
+300 lines - exactly the "big and everyone depends on it" combination this
+signal exists to surface.
+
 ## Architecture
 
 One line per planned analyzer, numbered to match [Analyzers](#analyzers)
@@ -170,22 +223,47 @@ above:
    together by `analyze_repo(repo_dir, *, extensions=..., git_log_fn=...)`,
    which returns `list[MaintenanceCost]` (`path`, `size`, `churn`, `fan_in`,
    `cost`).
-4. Architectural-debt report - not yet built. See [Roadmap](#roadmap).
+4. `src/autocto/architectural_debt.py` - three independent signals over one
+   same-repo import graph, built by reusing
+   `maintenance_cost.extract_referenced_names` per file and resolving names
+   to real files the same stem-matching way `maintenance_cost.compute_fan_in`
+   does (pure function `build_import_graph`). Import cycles: `find_cycles`
+   runs an iterative Tarjan strongly-connected-components pass over the
+   graph and reports each component of size > 1 (a documented simplification
+   versus enumerating every elementary cycle - see the function's
+   docstring for why). God files: `find_god_files` flags files that clear
+   BOTH a size threshold (line count, via `maintenance_cost.count_lines`)
+   AND a connections threshold (`fan_in + fan_out`, `fan_in` from
+   `compute_fan_in`, `fan_out` from the same import graph), returning
+   `list[GodFile]` (`path`, `size`, `fan_in`, `fan_out`) ranked by
+   `size x (fan_in + fan_out)`. Layering violations: `find_layering_violations`
+   only runs when the caller passes an explicit `layer_order` (an ordered
+   list of top-level package names, most-foundational first) - there is no
+   universal default across arbitrary repos, so `None` (the default) means
+   "skip the check", never a fabricated ordering; a violation is an import
+   edge pointing from a more-foundational layer up into a less-foundational
+   one, returned as `list[LayeringViolation]` (`importer`, `importee`,
+   `importer_layer`, `importee_layer`). All three are wired together by the
+   one effectful entry point,
+   `analyze_repo(repo_dir, *, extensions=..., layer_order=None, size_threshold=..., connections_threshold=...)`,
+   which returns one `ArchitecturalDebtReport` (`cycles`, `god_files`,
+   `layering_violations`). No git, no subprocess anywhere in this module -
+   none of its three signals need churn.
 5. Migration-plan generator - not yet built. See [Roadmap](#roadmap).
 
-Both shipped modules follow the same shape: filesystem/subprocess access is
+All shipped modules follow the same shape: filesystem/subprocess access is
 isolated to `analyze_repo`, everything else is a pure function over strings
-and dicts, and the effectful seam (`git_log_fn` in hotspots) is injectable so
-tests never shell out to real git. See `CONTRIBUTING.md` for the pattern in
-detail.
+and dicts. Where a module has a genuinely effectful operation (`git log` in
+hotspots/maintenance_cost) it is an injectable seam (`git_log_fn`) so tests
+never shell out to real git; architectural_debt.py needs no such seam at all,
+since none of its three signals depend on git history. See `CONTRIBUTING.md`
+for the pattern in detail.
 
 ## Roadmap
 
 Tier 4 items in the ai-ecosystem Night Shift queue (PROJECT-GENESIS.md
 section 9), still open and not part of this repo yet:
 
-- **#31 Architectural-debt report** - import cycles, god files, layering
-  violations.
 - **#32 Migration-plan generator** - turns a redesign proposal into an
   ordered, verifiable migration plan.
 
