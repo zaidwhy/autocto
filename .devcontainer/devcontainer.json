@@ -1,0 +1,6 @@
+{
+  "name": "autocto",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postCreateCommand": "pip install -e .[dev] && pytest -q",
+  "customizations": { "vscode": { "extensions": ["ms-python.python"] } }
+}
