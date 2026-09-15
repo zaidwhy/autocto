@@ -1,6 +1,6 @@
 # autocto
 
-[![CI](https://github.com/syzayd/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/syzayd/autocto/actions/workflows/ci.yml)
+[![CI](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
 [![Tests](https://img.shields.io/badge/tests-93%20passing-brightgreen)](tests/)
