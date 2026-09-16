@@ -11,8 +11,12 @@
   `pipx install repo-autocto`) puts `autocto` on PATH.
 - 14 CLI tests (end-to-end against a real temporary git repo, JSON-shape
   checks, the installed console script itself) - 107 tests total, up from 93.
-- `.github/workflows/publish.yml`: builds and publishes to PyPI via trusted
-  publishing on every `v*` tag.
+- `.github/workflows/release.yml`: builds the sdist/wheel and creates a
+  GitHub Release with them attached on every `v*` tag.
+- `.github/workflows/publish-pypi.yml`: publishes to PyPI via trusted
+  publishing, run manually once the PyPI project is configured (see the
+  note in that file - a one-time step only Zaid can do, since it needs a
+  PyPI account).
 - `.devcontainer/devcontainer.json` for one-click Codespaces.
 
 ### Changed
