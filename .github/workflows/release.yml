@@ -1,0 +1,25 @@
+name: Release
+# Runs on every v* tag: builds the sdist/wheel and creates a GitHub Release with them
+# attached, using the matching section of CHANGELOG.md as the release notes. No PyPI
+# account or secret is needed for this job - see publish-pypi.yml for that, separately.
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build
+      - name: Extract this version's CHANGELOG section
+        run: awk '/^## /{if (p) exit; p=1; next} p' CHANGELOG.md > /tmp/release-notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body_path: /tmp/release-notes.md

@@ -1,22 +1,43 @@
 # autocto
 
 [![CI](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/repo-autocto.svg)](https://pypi.org/project/repo-autocto/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-93%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-107%20passing-brightgreen)](tests/)
 
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
 
-Status: analyzers land one PR at a time via the ai-ecosystem Night Shift queue
-(PROJECT-GENESIS.md section 9). All five planned analyzers are now shipped
-(hotspots, duplicates, maintenance-cost, architectural-debt,
-migration-plan); see [Roadmap](#roadmap) for what's next.
+Status: all five planned analyzers are shipped (hotspots, duplicates,
+maintenance-cost, architectural-debt, migration-plan), plus a CLI
+(`autocto`) and a v0.1.0 release on PyPI. See [Roadmap](#roadmap) for what's
+next.
 
 ## Quickstart
 
-There is no CLI yet (see [Roadmap](#roadmap)) - each analyzer is a pure
-`analyze_repo(repo_dir)` function you call directly from Python.
+```bash
+pipx install repo-autocto   # or: pip install repo-autocto
+autocto report /path/to/some/repo
+```
+
+```
+$ autocto hotspots . --limit 3
+path                                churn  complexity  score
+-----------------------------------  -----  ----------  -----
+src/autocto/architectural_debt.py    12     47          564
+src/autocto/maintenance_cost.py      9      28          252
+src/autocto/hotspots.py              7      34          238
+```
+
+Every subcommand (`hotspots`, `duplicates`, `maintenance`, `architecture`,
+`report`) takes a repo path (default: current directory) and `--json` for
+machine-readable output. `autocto --help` and `autocto <command> --help`
+show every flag.
+
+Prefer calling it from Python directly? Each analyzer is still a pure
+`analyze_repo(repo_dir)` function - the CLI is a thin wrapper over the same
+functions used below.
 
 ```bash
 pip install -e ".[dev]"
@@ -399,10 +420,8 @@ not a repo scan. See `CONTRIBUTING.md` for the pattern in detail.
 ## Roadmap
 
 All five Tier 4 analyzers in the ai-ecosystem Night Shift queue
-(PROJECT-GENESIS.md section 9) are now shipped. Nothing further is queued
-for this repo yet - next candidates would come from a fresh Night Shift
-pass over PROJECT-GENESIS.md section 9.
-
-There is also no CLI entry point yet (no `[project.scripts]` in
-`pyproject.toml`); analyzers are called as Python functions, per the
-[Quickstart](#quickstart) above.
+(PROJECT-GENESIS.md section 9) are shipped, plus the CLI and the v0.1.0
+PyPI release. Nothing further is queued for this repo yet - next
+candidates would come from a fresh Night Shift pass over
+PROJECT-GENESIS.md section 9, or from real usage against other repos in
+the fleet.

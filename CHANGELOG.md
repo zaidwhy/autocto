@@ -1,0 +1,23 @@
+# Changelog
+
+## v0.1.0 - 2026-09-16
+
+### Added
+- `autocto` CLI (`src/autocto/cli.py`) with five subcommands: `hotspots`,
+  `duplicates`, `maintenance`, `architecture`, `report`. Each takes a repo
+  path (default: current directory), prints a human-readable table by
+  default, and supports `--json` for machine-readable output.
+- `[project.scripts]` entry point so `pip install repo-autocto` (or
+  `pipx install repo-autocto`) puts `autocto` on PATH.
+- 14 CLI tests (end-to-end against a real temporary git repo, JSON-shape
+  checks, the installed console script itself) - 107 tests total, up from 93.
+- `.github/workflows/publish.yml`: builds and publishes to PyPI via trusted
+  publishing on every `v*` tag.
+- `.devcontainer/devcontainer.json` for one-click Codespaces.
+
+### Changed
+- README: quickstart now leads with `pipx install repo-autocto`; badges
+  reflect the PyPI package and the current test count.
+
+No changes to the five analyzers themselves in this release - the CLI is a
+thin wrapper over `analyze_repo(repo_dir)` in each module.

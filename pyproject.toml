@@ -12,6 +12,12 @@ authors = [{ name = "Zaid Ali Syed" }]
 license = { text = "MIT" }
 dependencies = []
 
+[project.urls]
+Repository = "https://github.com/zaidwhy/autocto"
+
+[project.scripts]
+autocto = "autocto.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 

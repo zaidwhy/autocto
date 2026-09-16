@@ -1,0 +1,32 @@
+name: Publish to PyPI
+# Manual only, deliberately: PyPI trusted publishing needs a one-time setup on
+# pypi.org that only the package owner can do (Zaid), so this never fires on a tag
+# push by itself. See the "One-time PyPI setup" note in RELEASE.md.
+#
+# Steps to actually publish v0.1.0 once trusted publishing is configured:
+#   1. https://pypi.org/manage/account/publishing/ -> Add a pending publisher:
+#      PyPI project name: repo-autocto
+#      Owner: zaidwhy   Repository: autocto   Workflow: publish-pypi.yml   Environment: pypi
+#   2. Actions tab -> "Publish to PyPI" -> Run workflow -> pick the v0.1.0 tag.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag to publish (e.g. v0.1.0)"
+        required: true
+permissions:
+  id-token: write   # trusted publishing: no PyPI API token stored in this repo
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
