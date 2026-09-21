@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `docs/ARCHITECTURE.md`: components, data flow, failure modes and tradeoffs, including the honest limits (heuristic complexity, name-matched imports, and the unhandled error outside a git repository).
+- `ROADMAP.md`: candidate directions in the order the current limits suggest.
+
 ## v0.1.0 - 2026-09-16
 
 ### Added
