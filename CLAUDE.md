@@ -15,7 +15,7 @@ Doc of record: `README.md` (roadmap section) and `CONTRIBUTING.md`.
 
 ## Deploy
 
-- Library, not a service. Target: PyPI via trusted publishing (`.github/workflows/publish.yml`, on tag `v*`), `pipx install autocto`. Not published yet.
+- Library, not a service. Published on PyPI as `repo-autocto` (trusted publishing, `.github/workflows/publish-pypi.yml`); the installed command is `autocto`. Install with `pipx install repo-autocto`. Verify a project exists via the PyPI JSON API (`https://pypi.org/pypi/repo-autocto/json`), never the HTML pages, which return a bot-challenge 200 for any URL.
 
 ## Layout
 
