@@ -1,7 +1,7 @@
 # CLAUDE.md - autocto
 
-Repository-health analyzers from git history alone (bug hotspots, duplicated logic, maintenance cost, architectural debt, migration plan). Library with 93 offline tests; the SWE flagship per `zaid-os/strategy/FLAGSHIPS.md`. Status: all five analyzers shipped; **no CLI yet** - that is the next deliverable (`autocto` console script + PyPI release).
-Doc of record: `README.md` (roadmap section) and `CONTRIBUTING.md`.
+Repository-health analyzers from git history alone (bug hotspots, duplicated logic, maintenance cost, architectural debt, migration plan). Library and CLI with 107 offline tests; the SWE flagship per `zaid-os/strategy/FLAGSHIPS.md`. Status: all five analyzers and the `autocto` CLI shipped; v0.1.0 is on PyPI as `repo-autocto`.
+Doc of record: `README.md`, `docs/ARCHITECTURE.md` (design and honest limits), `ROADMAP.md` (next steps) and `CONTRIBUTING.md`.
 
 ## Run
 
@@ -9,8 +9,8 @@ Doc of record: `README.md` (roadmap section) and `CONTRIBUTING.md`.
 |---|---|
 | Activate env | `py -3.12 -m venv .venv` then `.venv\Scripts\activate` (needs Python 3.12+, per `pyproject.toml`) |
 | Install | `pip install -e .[dev]` |
-| Run | `python -c "from autocto.hotspots import analyze_repo; print(analyze_repo('.'))"` (CLI pending) |
-| Tests | `pytest -q` - expected: `93 passed` |
+| Run | `autocto report .` (or `python -m autocto.cli report .`); subcommands `hotspots`, `duplicates`, `maintenance`, `architecture`, `report`, all with `--json` |
+| Tests | `pytest -q` - expected: `107 passed` |
 | Lint | `ruff check src tests` |
 
 ## Deploy
@@ -20,8 +20,8 @@ Doc of record: `README.md` (roadmap section) and `CONTRIBUTING.md`.
 ## Layout
 
 ```
-src/autocto/   hotspots.py duplication.py maintenance.py architecture.py migration.py (each exposes analyze_repo)
-tests/         one file per analyzer, fixtures build throwaway git repos
+src/autocto/   hotspots.py duplicates.py maintenance_cost.py architectural_debt.py migration_plan.py cli.py (each analyzer exposes analyze_repo)
+tests/         one file per analyzer plus test_cli.py, fixtures build throwaway git repos
 ```
 
 ## Definition of done (any change here)
