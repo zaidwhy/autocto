@@ -8,6 +8,7 @@
 - `ROADMAP.md`: candidate directions in the order the current limits suggest.
 
 ### Fixed
+- CLI: `hotspots`, `maintenance` and `report` outside a git repository print `error: <path> is not a git repository` and exit 2 instead of a `CalledProcessError` traceback (3 regression tests; 110 total). `.venv/` is now gitignored, matching the setup in CLAUDE.md.
 - README quickstart sample: it showed churn 12/9/7 for `autocto hotspots .`, which no longer reproduces (every file in this repo's history has churn 1). Replaced with a captured 2026-09-27 run against recall.
 
 ## v0.1.0 - 2026-09-16

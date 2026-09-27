@@ -55,13 +55,13 @@ Every module exposes pure functions plus one `analyze_repo` that does the file a
 | Architectural debt | `architectural_debt.py` | import graph, cycles, god files, layering |
 | Migration plan | `migration_plan.py` | ordering proposed changes, markdown rendering |
 | CLI | `cli.py` | argument parsing, table and JSON output |
-| Tests | `tests/` | 107 tests, including end to end against a real temporary git repo |
+| Tests | `tests/` | 110 tests, including end to end against a real temporary git repo |
 
 ## Failure modes
 
 | Failure | Effect | Mitigation |
 |---|---|---|
-| Not a git repository | `git log` exits 128 and the analyzer raises an unhandled `CalledProcessError` with a traceback | a known gap: there is no friendly message yet (see `ROADMAP.md`) |
+| Not a git repository | `git log` exits 128 | the CLI prints `error: <path> is not a git repository` and exits 2; the library functions still raise `CalledProcessError` for callers to handle |
 | A file has churn but no readable source | cannot be scored honestly | excluded from the ranking rather than given a made-up score |
 | Two unrelated files share a name stem | fan-in and import edges are over-counted | documented as a known trade-off of name matching; fine for a relative ranking inside one repo, wrong as an absolute number |
 | Languages outside py, js, ts | those files are ignored | the extension set is a parameter |

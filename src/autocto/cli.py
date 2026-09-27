@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -161,7 +162,13 @@ def main(argv: list[str] | None = None) -> int:
     if not args.repo.exists():
         print(f"error: {args.repo} does not exist", file=sys.stderr)
         return 2
-    return args.func(args)
+    try:
+        return args.func(args)
+    except subprocess.CalledProcessError as exc:
+        if exc.cmd and exc.cmd[0] != "git":
+            raise
+        print(f"error: {args.repo} is not a git repository ({args.command} reads git history)", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

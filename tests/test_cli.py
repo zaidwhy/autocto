@@ -73,6 +73,14 @@ def test_missing_repo_path_errors():
     assert run("hotspots", "/does/not/exist/at/all") == 2
 
 
+@pytest.mark.parametrize("cmd", ["hotspots", "maintenance", "report"])
+def test_non_git_folder_errors_cleanly(tmp_path, cmd, capsys):
+    """The git-history analyzers print one error line instead of a CalledProcessError traceback."""
+    (tmp_path / "a.py").write_text("x = 1\n")
+    assert run(cmd, str(tmp_path)) == 2
+    assert "not a git repository" in capsys.readouterr().err
+
+
 def test_installed_console_script_runs():
     """The [project.scripts] entry point resolves and behaves like `python -m autocto.cli`."""
     result = subprocess.run([sys.executable, "-m", "autocto.cli", "--help"], capture_output=True, text=True)

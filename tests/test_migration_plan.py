@@ -6,7 +6,6 @@ import pytest
 
 from autocto.migration_plan import (
     CycleError,
-    MigrationPlan,
     ProposedChange,
     build_migration_plan,
     generate_migration_plan,
