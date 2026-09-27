@@ -9,6 +9,8 @@
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
 
+<img src="docs/autocto-pipeline.svg" alt="autocto pipeline: git history and the source tree feed four analyzers (hotspots, duplicates, maintenance cost, architectural debt); a fifth, the migration planner, orders human-proposed changes with a topological sort. Sample output against the recall repo: frontend/src/App.jsx scores 5289, churn 41 times complexity 129." width="100%">
+
 Status: all five planned analyzers are shipped (hotspots, duplicates,
 maintenance-cost, architectural-debt, migration-plan), plus a CLI
 (`autocto`) and a v0.1.0 release on PyPI. See [Roadmap](#roadmap) for what's
@@ -22,13 +24,17 @@ autocto report /path/to/some/repo
 ```
 
 ```
-$ autocto hotspots . --limit 3
-path                                churn  complexity  score
------------------------------------  -----  ----------  -----
-src/autocto/architectural_debt.py    12     47          564
-src/autocto/maintenance_cost.py      9      28          252
-src/autocto/hotspots.py              7      34          238
+$ autocto hotspots ../recall --limit 3
+path                  churn  complexity  score
+--------------------  -----  ----------  -----
+frontend/src/App.jsx  41     129         5289
+backend/main.py       41     89          3649
+backend/memory.py     11     49          539
 ```
+
+(Captured 2026-09-27 against a local checkout of
+[recall](https://github.com/zaidwhy/recall). Run against autocto's own tree
+it is less interesting: every file there has a churn of 1.)
 
 Every subcommand (`hotspots`, `duplicates`, `maintenance`, `architecture`,
 `report`) takes a repo path (default: current directory) and `--json` for
