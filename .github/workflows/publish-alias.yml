@@ -1,0 +1,23 @@
+name: Publish the autocto alias to PyPI
+# Holds the PyPI name `autocto` for this project: packaging/autocto-alias is a metadata-only
+# package that depends on repo-autocto, so `pip install autocto` installs the real tool.
+# Manual only, trusted publishing (no token in this repo). One-time setup on pypi.org by the
+# account owner (zaidwhys): https://pypi.org/manage/account/publishing/ -> Add a pending publisher:
+#   PyPI project name: autocto   Owner: zaidwhy   Repository: autocto
+#   Workflow: publish-alias.yml  Environment: pypi
+on:
+  workflow_dispatch:
+permissions:
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build packaging/autocto-alias --outdir dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Name-holding alias: `pip install autocto` installs the real package, repo-autocto.
+# This distribution ships no code of its own; the `autocto` command comes from repo-autocto.
+[project]
+name = "autocto"
+version = "0.1.0"
+description = "Alias for repo-autocto: repository-health analyzers from git history alone. Installs repo-autocto."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Zaid Ali Syed" }]
+dependencies = ["repo-autocto>=0.1.0"]
+
+[project.urls]
+Homepage = "https://github.com/zaidwhy/autocto"
+"Real package" = "https://pypi.org/project/repo-autocto/"
+
+[tool.setuptools]
+packages = []
+py-modules = []
