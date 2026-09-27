@@ -3,8 +3,12 @@
 ## Unreleased
 
 ### Added
+- `docs/autocto-pipeline.svg`: hand-authored one-diagram README hero (inputs, five analyzers, real sample output against recall).
 - `docs/ARCHITECTURE.md`: components, data flow, failure modes and tradeoffs, including the honest limits (heuristic complexity, name-matched imports, and the unhandled error outside a git repository).
 - `ROADMAP.md`: candidate directions in the order the current limits suggest.
+
+### Fixed
+- README quickstart sample: it showed churn 12/9/7 for `autocto hotspots .`, which no longer reproduces (every file in this repo's history has churn 1). Replaced with a captured 2026-09-27 run against recall.
 
 ## v0.1.0 - 2026-09-16
 
