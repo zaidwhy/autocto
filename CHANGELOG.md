@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- CI runs `ruff check .`; ruff is pinned to 0.16.9 in the `dev` extra so local and CI lint agree (an unpinned CI install pulled 0.16.9 and found 5 issues that local 0.15.17 passed). Fixed them: `collections.abc.Sequence` imports in three modules, explicit `check=False` in one test. 110 tests pass.
+
 ### Added
 - `docs/autocto-pipeline.svg`: hand-authored one-diagram README hero (inputs, five analyzers, real sample output against recall).
 - `docs/ARCHITECTURE.md`: components, data flow, failure modes and tradeoffs, including the honest limits (heuristic complexity, name-matched imports, and the unhandled error outside a git repository).
