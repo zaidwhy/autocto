@@ -19,7 +19,7 @@ Repository = "https://github.com/zaidwhy/autocto"
 autocto = "autocto.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.15"]
+dev = ["pytest>=8.0", "ruff==0.16.9"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

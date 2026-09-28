@@ -21,8 +21,8 @@ its only input is the proposal itself, so it is pure end to end.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 _RISK_VERIFICATION = {
     "low": "Run the affected tests; confirm no other callers reference the old shape.",

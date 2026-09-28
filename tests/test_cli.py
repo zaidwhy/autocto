@@ -83,6 +83,8 @@ def test_non_git_folder_errors_cleanly(tmp_path, cmd, capsys):
 
 def test_installed_console_script_runs():
     """The [project.scripts] entry point resolves and behaves like `python -m autocto.cli`."""
-    result = subprocess.run([sys.executable, "-m", "autocto.cli", "--help"], capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "-m", "autocto.cli", "--help"], capture_output=True, text=True, check=False
+    )
     assert result.returncode == 0
     assert "hotspots" in result.stdout

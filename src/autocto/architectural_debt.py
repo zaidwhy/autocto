@@ -18,11 +18,15 @@ none of the three signals need churn, only the import graph and file size.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
-from autocto.maintenance_cost import compute_fan_in, count_lines, extract_referenced_names
+from autocto.maintenance_cost import (
+    compute_fan_in,
+    count_lines,
+    extract_referenced_names,
+)
 
 DEFAULT_EXTENSIONS = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
 _SKIP_DIR_NAMES = frozenset({".git", "node_modules", "venv", ".venv", "__pycache__", "dist", "build"})
