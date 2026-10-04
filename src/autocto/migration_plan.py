@@ -31,6 +31,9 @@ _RISK_VERIFICATION = {
     "get a second reviewer before merging.",
 }
 _DEFAULT_RISK = "low"
+# Public names for the CLI to validate input against.
+DEFAULT_RISK = _DEFAULT_RISK
+RISK_LEVELS = tuple(_RISK_VERIFICATION)
 
 
 class CycleError(ValueError):

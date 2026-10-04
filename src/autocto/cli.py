@@ -5,10 +5,16 @@
     autocto maintenance [REPO] [--limit N] [--json]
     autocto architecture [REPO] [--layers a,b,c] [--json]
     autocto report [REPO] [--json]      # all four analyzers in one pass
+    autocto plan FILE [--json]          # order a proposed redesign into a migration plan
 
 REPO defaults to the current directory. Every analyzer is read-only: it inspects git
 history and file contents, never writes to the target repo. `--json` prints one JSON
 object per command instead of the human-readable table, for piping into other tools.
+
+`plan` is the exception: it reads a JSON proposal (title, optional rationale, and a list
+of changes with id, description, files, depends_on, risk), orders the changes so every
+dependency lands first, and prints markdown (or the ordered steps with --json). It never
+touches a repo.
 """
 
 from __future__ import annotations
@@ -20,7 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import architectural_debt, duplicates, hotspots, maintenance_cost
+from . import architectural_debt, duplicates, hotspots, maintenance_cost, migration_plan
 
 DEFAULT_LIMIT = 10
 
@@ -118,6 +124,71 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+class _ProposalError(ValueError):
+    """The proposal file is not a valid migration proposal."""
+
+
+def _load_proposal(path: Path) -> tuple[str, str, list[migration_plan.ProposedChange]]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _ProposalError(f"{path} is not valid JSON ({exc})") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("title"), str) or not data["title"]:
+        raise _ProposalError('the proposal needs a "title" string')
+    raw_changes = data.get("changes")
+    if not isinstance(raw_changes, list) or not raw_changes:
+        raise _ProposalError('the proposal needs a non-empty "changes" list')
+
+    changes: list[migration_plan.ProposedChange] = []
+    seen: set[str] = set()
+    for i, raw in enumerate(raw_changes, start=1):
+        if not isinstance(raw, dict) or not isinstance(raw.get("id"), str) or not raw["id"]:
+            raise _ProposalError(f'change {i} needs an "id" string')
+        if raw["id"] in seen:
+            raise _ProposalError(f'duplicate change id "{raw["id"]}"')
+        seen.add(raw["id"])
+        if not isinstance(raw.get("description"), str) or not raw["description"]:
+            raise _ProposalError(f'change "{raw["id"]}" needs a "description" string')
+        risk = raw.get("risk", migration_plan.DEFAULT_RISK)
+        if risk not in migration_plan.RISK_LEVELS:
+            raise _ProposalError(
+                f'change "{raw["id"]}" has risk {risk!r}; use one of {", ".join(migration_plan.RISK_LEVELS)}'
+            )
+        lists = {}
+        for key in ("files", "depends_on"):
+            value = raw.get(key, [])
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                raise _ProposalError(f'change "{raw["id"]}": "{key}" must be a list of strings')
+            lists[key] = tuple(value)
+        changes.append(
+            migration_plan.ProposedChange(
+                id=raw["id"],
+                description=raw["description"],
+                files=lists["files"],
+                depends_on=lists["depends_on"],
+                risk=risk,
+            )
+        )
+    rationale = data.get("rationale", "")
+    if not isinstance(rationale, str):
+        raise _ProposalError('"rationale" must be a string')
+    return data["title"], rationale, changes
+
+
+def cmd_plan(args: argparse.Namespace) -> int:
+    try:
+        title, rationale, changes = _load_proposal(args.proposal)
+        plan = migration_plan.build_migration_plan(title, changes, rationale=rationale)
+    except (_ProposalError, migration_plan.CycleError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    if args.json:
+        _print_json(plan)
+    else:
+        print(migration_plan.render_migration_plan_markdown(plan), end="")
+    return 0
+
+
 def _add_repo_arg(p: argparse.ArgumentParser) -> None:
     p.add_argument("repo", nargs="?", type=Path, default=Path("."), help="Path to the repo (default: current directory)")
     p.add_argument("--json", action="store_true", help="print JSON instead of a table")
@@ -153,14 +224,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--layers", help="comma-separated top-level dirs, most-foundational first")
     p.set_defaults(func=cmd_report)
 
+    p = sub.add_parser("plan", help="order a JSON redesign proposal into a migration plan (markdown)")
+    p.add_argument("proposal", type=Path, help="JSON file: title, rationale, changes[id, description, files, depends_on, risk]")
+    p.add_argument("--json", action="store_true", help="print the ordered steps as JSON instead of markdown")
+    p.set_defaults(func=cmd_plan)
+
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not args.repo.exists():
-        print(f"error: {args.repo} does not exist", file=sys.stderr)
+    target = getattr(args, "repo", None) or getattr(args, "proposal", None)
+    if not target.exists():
+        print(f"error: {target} does not exist", file=sys.stderr)
         return 2
     try:
         return args.func(args)

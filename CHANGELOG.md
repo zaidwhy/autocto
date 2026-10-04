@@ -3,14 +3,18 @@
 ## Unreleased
 
 ### Changed
+- Real import resolution (`src/autocto/imports.py`, standard library only). `maintenance` fan-in and `architecture` (cycles, god files, layering) now follow each import to the one file it names: Python through `ast` (packages, relative imports, `src/` layouts, `from pkg import submodule`), JS/TS relative specifiers (`index.*`, `.js` to `.ts`, `export ... from`, `require`, dynamic `import()`). Two files that share a name no longer count as each other's importers or form a false cycle. Imports it cannot follow (tsconfig aliases, `sys.path`, dynamic Python imports) give no edge. `extract_referenced_names`, `compute_fan_in` and `build_import_graph` stay for callers that only have bare names.
+- Paths in `maintenance` and `architecture` results are repo-relative with forward slashes on every platform.
 - CI runs `ruff check .`; ruff is pinned to 0.16.9 in the `dev` extra so local and CI lint agree (an unpinned CI install pulled 0.16.9 and found 5 issues that local 0.15.17 passed). Fixed them: `collections.abc.Sequence` imports in three modules, explicit `check=False` in one test. 110 tests pass.
 
 ### Added
+- `autocto plan FILE [--json]`: the migration planner is now reachable from the CLI. FILE is JSON (`title`, optional `rationale`, `changes` with `id`, `description`, `files`, `depends_on`, `risk`). Prints the ordered markdown plan; a malformed proposal or a dependency cycle prints one `error:` line and exits 2.
 - `docs/autocto-pipeline.svg`: hand-authored one-diagram README hero (inputs, five analyzers, real sample output against recall).
 - `docs/ARCHITECTURE.md`: components, data flow, failure modes and tradeoffs, including the honest limits (heuristic complexity, name-matched imports, and the unhandled error outside a git repository).
 - `ROADMAP.md`: candidate directions in the order the current limits suggest.
 
 ### Fixed
+- `maintenance` returned no results on Windows: source paths used `\` while `git log` reports `/`, so no file matched its churn. Both now use forward slashes.
 - CLI: `hotspots`, `maintenance` and `report` outside a git repository print `error: <path> is not a git repository` and exit 2 instead of a `CalledProcessError` traceback (3 regression tests; 110 total). `.venv/` is now gitignored, matching the setup in CLAUDE.md.
 - README quickstart sample: it showed churn 12/9/7 for `autocto hotspots .`, which no longer reproduces (every file in this repo's history has churn 1). Replaced with a captured 2026-09-27 run against recall.
 

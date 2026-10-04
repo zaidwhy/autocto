@@ -5,9 +5,10 @@ hotspots.py already combines churn (how often a file changes) with complexity (h
 gnarly it reads). This adds a third, independent maintenance signal - dependency
 fan-in: how many OTHER files in the repo reference this one. A file nobody depends on
 is safe to change quickly; a file five other files import is a blast-radius risk every
-time it changes, regardless of its own complexity. Fan-in is resolved by a name-matching
-heuristic (import statements -> referenced module/file stems), not a real import graph -
-same "dependency-free, good-enough proxy" bar as hotspots.complexity_score.
+time it changes, regardless of its own complexity. `analyze_repo` resolves fan-in from
+the real import graph (`autocto.imports.resolve_imports`). The stem name-matching helpers
+`extract_referenced_names` and `compute_fan_in` below are the older heuristic, kept for
+callers that only have bare names.
 
 Reuses hotspots.parse_numstat_log/GitLogFn for churn (same git-log-text fixture works
 for both analyzers) and duplicates.py's file-walking shape for source discovery.
@@ -22,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from autocto.hotspots import GitLogFn, parse_numstat_log
+from autocto.imports import fan_in_from_graph, resolve_imports
 
 DEFAULT_EXTENSIONS = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
 _SKIP_DIR_NAMES = frozenset({".git", "node_modules", "venv", ".venv", "__pycache__", "dist", "build"})
@@ -151,14 +153,14 @@ def analyze_repo(
     repo_dir = Path(repo_dir)
     churn = parse_numstat_log(git_log_fn(repo_dir))
     size: dict[str, int] = {}
-    imports_by_file: dict[str, set[str]] = {}
+    sources: dict[str, str] = {}
     for path in _iter_source_files(repo_dir, extensions):
-        rel = str(path.relative_to(repo_dir))
+        rel = path.relative_to(repo_dir).as_posix()
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
         size[rel] = count_lines(content)
-        imports_by_file[rel] = extract_referenced_names(content)
-    fan_in = compute_fan_in(imports_by_file)
+        sources[rel] = content
+    fan_in = fan_in_from_graph(resolve_imports(sources))
     return estimate_costs(size, churn, fan_in)

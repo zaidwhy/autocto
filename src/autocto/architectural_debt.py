@@ -4,12 +4,13 @@ README.md "Planned analyzers" item 4 / PROJECT-GENESIS.md section 9 Tier 4 item 
 hotspots.py finds files that are risky because of their own history (churn x
 complexity); maintenance_cost.py adds size and blast-radius (fan-in). Neither looks at
 the SHAPE of the dependency graph itself. This module does: it builds a same-repo
-import graph (reusing maintenance_cost.py's name-matching heuristic, not a real import
-resolver) and reports three independent, well-documented signals over that one graph -
-cycles, god files, and (optionally) layering violations.
+import graph with the real resolver in `autocto.imports` (each import statement becomes
+an edge to the one file it names) and reports three independent, well-documented signals
+over that one graph - cycles, god files, and (optionally) layering violations.
+`build_import_graph` below is the older stem name-matching variant, kept for callers that
+only have bare names.
 
-Reuses maintenance_cost.extract_referenced_names (import parsing, Python and JS/TS) and
-count_lines/compute_fan_in directly rather than re-implementing them, and follows
+Reuses maintenance_cost.count_lines directly rather than re-implementing it, and follows
 duplicates.py's/maintenance_cost.py's file-walking shape (`_iter_source_files`,
 `_SKIP_DIR_NAMES`) for source discovery. No git, no subprocess anywhere in this module -
 none of the three signals need churn, only the import graph and file size.
@@ -22,11 +23,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from autocto.maintenance_cost import (
-    compute_fan_in,
-    count_lines,
-    extract_referenced_names,
-)
+from autocto.imports import fan_in_from_graph, resolve_imports
+from autocto.maintenance_cost import count_lines
 
 DEFAULT_EXTENSIONS = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
 _SKIP_DIR_NAMES = frozenset({".git", "node_modules", "venv", ".venv", "__pycache__", "dist", "build"})
@@ -283,18 +281,18 @@ def analyze_repo(
     """
     repo_dir = Path(repo_dir)
     size: dict[str, int] = {}
-    imports_by_file: dict[str, set[str]] = {}
+    sources: dict[str, str] = {}
     for path in _iter_source_files(repo_dir, extensions):
-        rel = str(path.relative_to(repo_dir))
+        rel = path.relative_to(repo_dir).as_posix()
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
         size[rel] = count_lines(content)
-        imports_by_file[rel] = extract_referenced_names(content)
+        sources[rel] = content
 
-    import_graph = build_import_graph(imports_by_file)
-    fan_in = compute_fan_in(imports_by_file)
+    import_graph = resolve_imports(sources)
+    fan_in = fan_in_from_graph(import_graph)
     fan_out = {path: len(targets) for path, targets in import_graph.items()}
 
     cycles = find_cycles(import_graph)

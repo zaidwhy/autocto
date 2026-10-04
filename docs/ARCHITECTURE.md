@@ -40,10 +40,10 @@ Every module exposes pure functions plus one `analyze_repo` that does the file a
 1. Hotspots and maintenance cost each run `git log --numstat` once; every analyzer walks the working tree for the configured extensions. Duplicates and architectural debt use the source files only.
 2. Hotspots counts commits per file as churn, not lines touched, and scores complexity as 1 plus the number of branch keywords and operators. Only files that have both a churn value and a complexity value are scored.
 3. Duplicates tokenises each file, builds shingle sets and ranks file pairs by Jaccard similarity above a threshold.
-4. Maintenance cost reuses size and churn, and adds fan-in: how many other files reference a file by module name. It multiplies by `(1 + fan_in)` so a file nobody imports still carries its own size times churn.
-5. Architectural debt builds an import graph with the same name-matching that fan-in uses, then reports import cycles, files that are both large and highly connected, and layering violations against an optional `--layers a,b,c` ordering.
+4. Maintenance cost reuses size and churn, and adds fan-in: how many other files import a file, resolved to the real file by `imports.py`. It multiplies by `(1 + fan_in)` so a file nobody imports still carries its own size times churn.
+5. Architectural debt builds the same real import graph that fan-in uses, then reports import cycles, files that are both large and highly connected, and layering violations against an optional `--layers a,b,c` ordering.
 6. The migration planner is separate: it takes a set of proposed changes with dependencies and returns a topologically ordered plan, raising `CycleError` if the changes depend on each other in a loop.
-7. The CLI prints a table per analyzer, or JSON with `--json`.
+7. The CLI prints a table per analyzer, or JSON with `--json`. `autocto plan FILE` reads a JSON proposal and prints the ordered markdown plan (or JSON), exiting 2 with a one-line error on a malformed proposal or a dependency cycle.
 
 ## Components
 
@@ -63,7 +63,8 @@ Every module exposes pure functions plus one `analyze_repo` that does the file a
 |---|---|---|
 | Not a git repository | `git log` exits 128 | the CLI prints `error: <path> is not a git repository` and exits 2; the library functions still raise `CalledProcessError` for callers to handle |
 | A file has churn but no readable source | cannot be scored honestly | excluded from the ranking rather than given a made-up score |
-| Two unrelated files share a name stem | fan-in and import edges are over-counted | documented as a known trade-off of name matching; fine for a relative ranking inside one repo, wrong as an absolute number |
+| Two unrelated files share a name stem | none: imports resolve to the one file named | the resolver replaced stem matching; a shared stem no longer creates edges or cycles |
+| An import the resolver cannot follow (tsconfig path alias, `sys.path` edit, dynamic import, a file that does not parse) | that edge is missing, so fan-in and cycles undercount | documented limit; external and unresolvable imports give no edge rather than a guessed one |
 | Languages outside py, js, ts | those files are ignored | the extension set is a parameter |
 | Proposed migration changes form a cycle | no valid order exists | `CycleError` names the problem instead of returning a wrong plan |
 | Ties in a ranking | order would depend on dict iteration | ties break on path, so output is stable |
@@ -71,7 +72,7 @@ Every module exposes pure functions plus one `analyze_repo` that does the file a
 ## Tradeoffs
 
 - **Heuristic complexity over an AST:** dependency-free and good enough to rank files against each other within one repo. It is not cyclomatic complexity, and it should not be compared across repositories.
-- **Name-matching over real import resolution:** one scan covers both Python and JS or TS repos with no per-language resolver. It can over-count when stems collide.
+- **A small stdlib resolver over name matching:** `imports.py` uses `ast` for Python and a path resolver for JS or TS relative imports, so edges are exact where it can follow them, with no dependency added. It undercounts where it cannot follow an import (aliases, dynamic imports) instead of over-counting.
 - **Churn as commit count, not line count:** a file touched in many small commits is riskier than one large rewrite, which matches the research the hotspot idea comes from.
 - **Pure functions plus a thin I/O wrapper:** more code than one script, but each formula is testable in isolation and the ordering is deterministic.
 
@@ -93,4 +94,4 @@ $0 to run and $0 to distribute. It has no dependencies to keep patched.
 
 ## Future
 
-See `ROADMAP.md`. The main open questions are real import resolution and a language-aware complexity measure, both of which trade away the zero-dependency property.
+See `ROADMAP.md`. The main open question is a language-aware complexity measure, which trades away the zero-dependency property.

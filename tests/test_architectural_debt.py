@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from autocto.architectural_debt import (
     ArchitecturalDebtReport,
     GodFile,
@@ -188,8 +186,8 @@ def test_analyze_repo_end_to_end_detects_a_cycle_and_god_file(tmp_path):
     report = analyze_repo(repo, size_threshold=250, connections_threshold=2)
 
     assert isinstance(report, ArchitecturalDebtReport)
-    assert report.cycles == [[str(Path("router", "a.py")), str(Path("router", "b.py"))]]
-    assert [g.path for g in report.god_files] == [str(Path("interfaces", "big.py"))]
+    assert report.cycles == [["router/a.py", "router/b.py"]]
+    assert [g.path for g in report.god_files] == ["interfaces/big.py"]
 
 
 def test_analyze_repo_layering_violations_wired_through(tmp_path):
@@ -203,7 +201,7 @@ def test_analyze_repo_layering_violations_wired_through(tmp_path):
 
     assert report.layering_violations == [
         LayeringViolation(
-            str(Path("router", "core.py")), str(Path("interfaces", "api.py")), "router", "interfaces"
+            "router/core.py", "interfaces/api.py", "router", "interfaces"
         )
     ]
 

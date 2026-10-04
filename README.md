@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/repo-autocto.svg)](https://pypi.org/project/repo-autocto/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-110%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-133%20passing-brightgreen)](tests/)
 
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
@@ -38,7 +38,10 @@ it is less interesting: every file there has a churn of 1.)
 
 Every subcommand (`hotspots`, `duplicates`, `maintenance`, `architecture`,
 `report`) takes a repo path (default: current directory) and `--json` for
-machine-readable output. `autocto --help` and `autocto <command> --help`
+machine-readable output. `autocto plan proposal.json` is the one command
+that takes a file instead of a repo: it orders a JSON redesign proposal
+(`title`, `rationale`, `changes` with `id`, `description`, `files`,
+`depends_on`, `risk`) into the markdown migration plan. `autocto --help` and `autocto <command> --help`
 show every flag.
 
 Prefer calling it from Python directly? Each analyzer is still a pure
@@ -368,26 +371,30 @@ above:
    `analyze_repo(repo_dir, *, extensions=..., shingle_size=..., threshold=...)`,
    which returns `list[DuplicatePair]` (`path_a`, `path_b`, `similarity`).
 3. `src/autocto/maintenance_cost.py` - size (line count) x churn (reuses
-   `hotspots.parse_numstat_log`) x dependency fan-in (import-statement
-   name-matching against file stems, Python and JS/TS). Pure functions
-   `count_lines`, `extract_referenced_names`, `compute_fan_in`,
+   `hotspots.parse_numstat_log`) x dependency fan-in (how many other files
+   import it, from the real import graph built by `src/autocto/imports.py`,
+   Python and JS/TS). Pure functions
+   `count_lines`, `extract_referenced_names`, `compute_fan_in` (the older
+   stem name-matching helpers, kept for callers with only bare names),
    `estimate_costs` (formula: `size x churn x (1 + fan_in)` - see that
    function's docstring for why `1 + fan_in`, not bare `fan_in`) wired
    together by `analyze_repo(repo_dir, *, extensions=..., git_log_fn=...)`,
    which returns `list[MaintenanceCost]` (`path`, `size`, `churn`, `fan_in`,
    `cost`).
 4. `src/autocto/architectural_debt.py` - three independent signals over one
-   same-repo import graph, built by reusing
-   `maintenance_cost.extract_referenced_names` per file and resolving names
-   to real files the same stem-matching way `maintenance_cost.compute_fan_in`
-   does (pure function `build_import_graph`). Import cycles: `find_cycles`
+   same-repo import graph, built by `autocto.imports.resolve_imports`, which
+   resolves each import statement to the one file it names (Python via `ast`,
+   packages, relative imports and `src/` layouts; JS/TS relative specifiers,
+   `index.*` and `.js` -> `.ts`). Imports of anything outside the repo give no
+   edge; tsconfig path aliases and dynamic imports are not followed.
+   `build_import_graph` is the older stem name-matching variant. Import cycles: `find_cycles`
    runs an iterative Tarjan strongly-connected-components pass over the
    graph and reports each component of size > 1 (a documented simplification
    versus enumerating every elementary cycle - see the function's
    docstring for why). God files: `find_god_files` flags files that clear
    BOTH a size threshold (line count, via `maintenance_cost.count_lines`)
-   AND a connections threshold (`fan_in + fan_out`, `fan_in` from
-   `compute_fan_in`, `fan_out` from the same import graph), returning
+   AND a connections threshold (`fan_in + fan_out`, `fan_in` and
+   `fan_out` both from the same import graph), returning
    `list[GodFile]` (`path`, `size`, `fan_in`, `fan_out`) ranked by
    `size x (fan_in + fan_out)`. Layering violations: `find_layering_violations`
    only runs when the caller passes an explicit `layer_order` (an ordered

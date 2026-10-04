@@ -88,3 +88,55 @@ def test_installed_console_script_runs():
     )
     assert result.returncode == 0
     assert "hotspots" in result.stdout
+
+
+def _proposal(tmp_path: Path, data) -> Path:
+    path = tmp_path / "proposal.json"
+    path.write_text(data if isinstance(data, str) else json.dumps(data), encoding="utf-8")
+    return path
+
+
+_GOOD_PROPOSAL = {
+    "title": "Split engine",
+    "rationale": "too big",
+    "changes": [
+        {"id": "B", "description": "move callers", "depends_on": ["A"], "risk": "medium"},
+        {"id": "A", "description": "extract module", "files": ["engine.py"], "risk": "high"},
+    ],
+}
+
+
+def test_plan_prints_markdown_in_dependency_order(tmp_path, capsys):
+    assert run("plan", str(_proposal(tmp_path, _GOOD_PROPOSAL))) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("# Migration Plan: Split engine")
+    assert out.index("### 1. A - extract module") < out.index("### 2. B - move callers")
+
+
+def test_plan_json_lists_ordered_steps(tmp_path, capsys):
+    assert run("plan", str(_proposal(tmp_path, _GOOD_PROPOSAL)), "--json") == 0
+    plan = json.loads(capsys.readouterr().out)
+    assert [s["change"]["id"] for s in plan["steps"]] == ["A", "B"]
+
+
+@pytest.mark.parametrize(
+    "bad, message",
+    [
+        ("not json", "not valid JSON"),
+        ({"changes": []}, '"title"'),
+        ({"title": "t", "changes": []}, "non-empty"),
+        ({"title": "t", "changes": [{"id": "A", "description": "d", "risk": "extreme"}]}, "risk"),
+        ({"title": "t", "changes": [{"id": "A", "description": "d"}, {"id": "A", "description": "d"}]}, "duplicate"),
+        ({"title": "t", "changes": [{"id": "A", "description": "d", "depends_on": ["A"]}]}, "cycle"),
+        ({"title": "t", "changes": [{"id": "A", "description": "d", "depends_on": ["Z"]}]}, "unknown id"),
+    ],
+)
+def test_plan_rejects_a_bad_proposal_with_one_line_error(tmp_path, capsys, bad, message):
+    assert run("plan", str(_proposal(tmp_path, bad))) == 2
+    err = capsys.readouterr().err
+    assert err.startswith("error:") and message in err and "Traceback" not in err
+
+
+def test_plan_missing_file_is_a_clean_error(tmp_path, capsys):
+    assert run("plan", str(tmp_path / "nope.json")) == 2
+    assert "does not exist" in capsys.readouterr().err
