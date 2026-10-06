@@ -12,7 +12,7 @@ only have bare names.
 
 Reuses maintenance_cost.count_lines directly rather than re-implementing it, and follows
 duplicates.py's/maintenance_cost.py's file-walking shape (`_iter_source_files`,
-`_SKIP_DIR_NAMES`) for source discovery. No git, no subprocess anywhere in this module -
+`walk.is_skipped_path`) for source discovery. No git, no subprocess anywhere in this module -
 none of the three signals need churn, only the import graph and file size.
 """
 
@@ -25,9 +25,9 @@ from pathlib import Path
 
 from autocto.imports import fan_in_from_graph, resolve_imports
 from autocto.maintenance_cost import count_lines
+from autocto.walk import is_skipped_path
 
 DEFAULT_EXTENSIONS = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
-_SKIP_DIR_NAMES = frozenset({".git", "node_modules", "venv", ".venv", "__pycache__", "dist", "build"})
 
 # God-file thresholds. Reasoned from maintenance_cost.py's own captured README demo
 # against `recall` (its most realistic multi-file sample): sizes there run
@@ -256,7 +256,7 @@ def _iter_source_files(repo_dir: Path, extensions: frozenset[str]):
     for path in repo_dir.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in extensions:
             continue
-        if _SKIP_DIR_NAMES & set(path.relative_to(repo_dir).parts[:-1]):
+        if is_skipped_path(repo_dir, path):
             continue
         yield path
 

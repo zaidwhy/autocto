@@ -20,10 +20,11 @@ from dataclasses import dataclass
 from itertools import combinations
 from pathlib import Path
 
+from .walk import is_skipped_path
+
 DEFAULT_EXTENSIONS = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
 DEFAULT_SHINGLE_SIZE = 5
 DEFAULT_SIMILARITY_THRESHOLD = 0.6
-_SKIP_DIR_NAMES = frozenset({".git", "node_modules", "venv", ".venv", "__pycache__", "dist", "build"})
 
 _TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\.[0-9]+)?|\S")
 
@@ -88,7 +89,7 @@ def _iter_source_files(repo_dir: Path, extensions: frozenset[str]):
     for path in repo_dir.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in extensions:
             continue
-        if _SKIP_DIR_NAMES & set(path.relative_to(repo_dir).parts[:-1]):
+        if is_skipped_path(repo_dir, path):
             continue
         yield path
 

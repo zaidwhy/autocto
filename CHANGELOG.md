@@ -3,11 +3,13 @@
 ## Unreleased
 
 ### Changed
+- Source walks skip any virtual environment named like `venv` or `.venv` (`.venv312`, `venv-3.14`, `.venv_old`) plus `site-packages`, `.tox` and the mypy, pytest and ruff caches. Before, only the exact names `venv` and `.venv` were skipped, so an oddly named environment was walked and polluted `duplicates`, `maintenance` and `architecture`. The rule lives in one place, `src/autocto/walk.py`, replacing three copies of the same constant (27 tests with the gate below; 160 total).
 - Real import resolution (`src/autocto/imports.py`, standard library only). `maintenance` fan-in and `architecture` (cycles, god files, layering) now follow each import to the one file it names: Python through `ast` (packages, relative imports, `src/` layouts, `from pkg import submodule`), JS/TS relative specifiers (`index.*`, `.js` to `.ts`, `export ... from`, `require`, dynamic `import()`). Two files that share a name no longer count as each other's importers or form a false cycle. Imports it cannot follow (tsconfig aliases, `sys.path`, dynamic Python imports) give no edge. `extract_referenced_names`, `compute_fan_in` and `build_import_graph` stay for callers that only have bare names.
 - Paths in `maintenance` and `architecture` results are repo-relative with forward slashes on every platform.
 - CI runs `ruff check .`; ruff is pinned to 0.16.9 in the `dev` extra so local and CI lint agree (an unpinned CI install pulled 0.16.9 and found 5 issues that local 0.15.17 passed). Fixed them: `collections.abc.Sequence` imports in three modules, explicit `check=False` in one test. 110 tests pass.
 
 ### Added
+- `--fail-over N` on `hotspots` and `maintenance`: exits 1 and prints the offending files to stderr when any file's score or cost is above N, so the report can gate a pull request. The threshold checks every file, not just the `--limit` rows that are displayed; exit 2 is still only for usage and input errors.
 - `autocto plan FILE [--json]`: the migration planner is now reachable from the CLI. FILE is JSON (`title`, optional `rationale`, `changes` with `id`, `description`, `files`, `depends_on`, `risk`). Prints the ordered markdown plan; a malformed proposal or a dependency cycle prints one `error:` line and exits 2.
 - `docs/autocto-pipeline.svg`: hand-authored one-diagram README hero (inputs, five analyzers, real sample output against recall).
 - `docs/ARCHITECTURE.md`: components, data flow, failure modes and tradeoffs, including the honest limits (heuristic complexity, name-matched imports, and the unhandled error outside a git repository).

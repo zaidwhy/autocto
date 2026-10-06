@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/repo-autocto.svg)](https://pypi.org/project/repo-autocto/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-133%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-160%20passing-brightgreen)](tests/)
 
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.
@@ -43,6 +43,17 @@ that takes a file instead of a repo: it orders a JSON redesign proposal
 (`title`, `rationale`, `changes` with `id`, `description`, `files`,
 `depends_on`, `risk`) into the markdown migration plan. `autocto --help` and `autocto <command> --help`
 show every flag.
+
+To gate a pull request, `hotspots` and `maintenance` take `--fail-over N`: if any file's score (or cost)
+is above N, the offending files are printed to stderr and the command exits 1 (exit 2 stays for usage
+errors). It checks every file, not only the `--limit` rows shown.
+
+```bash
+autocto hotspots . --fail-over 5000   # CI step: fails the build when a file crosses the line
+```
+
+Source walks skip `.git`, `node_modules`, `dist`, `build`, caches, `site-packages`, and any virtual
+environment whose name starts with `venv` or `.venv` (so `.venv312` and `venv-3.14` too).
 
 Prefer calling it from Python directly? Each analyzer is still a pure
 `analyze_repo(repo_dir)` function - the CLI is a thin wrapper over the same

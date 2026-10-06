@@ -140,3 +140,34 @@ def test_plan_rejects_a_bad_proposal_with_one_line_error(tmp_path, capsys, bad, 
 def test_plan_missing_file_is_a_clean_error(tmp_path, capsys):
     assert run("plan", str(tmp_path / "nope.json")) == 2
     assert "does not exist" in capsys.readouterr().err
+
+
+def _top(cmd: str, repo: Path, capsys, field: str) -> float:
+    run(cmd, str(repo), "--json", "--limit", "1")
+    return json.loads(capsys.readouterr().out)[0][field]
+
+
+@pytest.mark.parametrize("cmd,field", [("hotspots", "score"), ("maintenance", "cost")])
+def test_fail_over_exits_one_naming_the_file(repo, cmd, field, capsys):
+    top = _top(cmd, repo, capsys, field)
+    assert top > 0
+    assert run(cmd, str(repo), "--fail-over", str(top - 1)) == 1
+    err = capsys.readouterr().err
+    assert "a.py" in err and field in err
+
+
+@pytest.mark.parametrize("cmd,field", [("hotspots", "score"), ("maintenance", "cost")])
+def test_fail_over_at_or_above_the_top_passes(repo, cmd, field, capsys):
+    top = _top(cmd, repo, capsys, field)
+    # the gate is strictly "above": a threshold equal to the worst file is not a failure
+    assert run(cmd, str(repo), "--fail-over", str(top)) == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_fail_over_checks_files_past_the_display_limit(repo, capsys):
+    # b.py ranks below a.py; --limit 1 hides it, the gate must still see every file
+    run("maintenance", str(repo), "--json")
+    rows = json.loads(capsys.readouterr().out)
+    assert len(rows) >= 2
+    second = sorted(r["cost"] for r in rows)[-2]
+    assert run("maintenance", str(repo), "--limit", "1", "--fail-over", str(second - 1)) == 1

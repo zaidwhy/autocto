@@ -25,8 +25,9 @@ from pathlib import Path
 from autocto.hotspots import GitLogFn, parse_numstat_log
 from autocto.imports import fan_in_from_graph, resolve_imports
 
+from .walk import is_skipped_path
+
 DEFAULT_EXTENSIONS = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
-_SKIP_DIR_NAMES = frozenset({".git", "node_modules", "venv", ".venv", "__pycache__", "dist", "build"})
 
 # Python: `from a.b.c import x` or `import a.b.c` - captures the dotted module path.
 _PY_IMPORT_RE = re.compile(r"^\s*(?:from\s+([.\w]+)\s+import\b|import\s+([.\w]+))", re.MULTILINE)
@@ -121,7 +122,7 @@ def _iter_source_files(repo_dir: Path, extensions: frozenset[str]):
     for path in repo_dir.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in extensions:
             continue
-        if _SKIP_DIR_NAMES & set(path.relative_to(repo_dir).parts[:-1]):
+        if is_skipped_path(repo_dir, path):
             continue
         yield path
 

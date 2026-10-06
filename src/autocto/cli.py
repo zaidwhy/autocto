@@ -1,8 +1,8 @@
 """Command-line entrypoint for autocto.
 
-    autocto hotspots [REPO] [--limit N] [--json]
+    autocto hotspots [REPO] [--limit N] [--fail-over SCORE] [--json]
     autocto duplicates [REPO] [--threshold F] [--limit N] [--json]
-    autocto maintenance [REPO] [--limit N] [--json]
+    autocto maintenance [REPO] [--limit N] [--fail-over COST] [--json]
     autocto architecture [REPO] [--layers a,b,c] [--json]
     autocto report [REPO] [--json]      # all four analyzers in one pass
     autocto plan FILE [--json]          # order a proposed redesign into a migration plan
@@ -10,6 +10,11 @@
 REPO defaults to the current directory. Every analyzer is read-only: it inspects git
 history and file contents, never writes to the target repo. `--json` prints one JSON
 object per command instead of the human-readable table, for piping into other tools.
+
+`--fail-over` turns a report into a check for CI: when any file's score (hotspots) or cost
+(maintenance) is above the given number, the offending files are printed to stderr and the
+command exits 1. Exit 2 stays reserved for usage and input errors. The threshold looks at every
+file, not just the `--limit` rows that are displayed.
 
 `plan` is the exception: it reads a JSON proposal (title, optional rationale, and a list
 of changes with id, description, files, depends_on, risk), orders the changes so every
@@ -56,13 +61,29 @@ def _print_table(rows: list, columns: list[str]) -> None:
         print("  ".join(str(getattr(r, c)).ljust(w) for c, w in zip(columns, widths)))
 
 
+def _gate(all_rows: list, field: str, limit: float | None, what: str) -> int:
+    """Exit code for --fail-over: 1 when any row's `field` is above `limit`, else 0."""
+    if limit is None:
+        return 0
+    over = [r for r in all_rows if getattr(r, field) > limit]
+    if not over:
+        return 0
+    print(f"autocto: {len(over)} file(s) with {what} above {limit:g}:", file=sys.stderr)
+    for r in over[:20]:
+        print(f"  {r.path}  {field}={getattr(r, field):g}", file=sys.stderr)
+    if len(over) > 20:
+        print(f"  ... and {len(over) - 20} more", file=sys.stderr)
+    return 1
+
+
 def cmd_hotspots(args: argparse.Namespace) -> int:
-    results = hotspots.analyze_repo(args.repo)[: args.limit]
+    everything = hotspots.analyze_repo(args.repo)
+    results = everything[: args.limit]
     if args.json:
         _print_json(results)
     else:
         _print_table(results, ["path", "churn", "complexity", "score"])
-    return 0
+    return _gate(everything, "score", args.fail_over, "hotspot score")
 
 
 def cmd_duplicates(args: argparse.Namespace) -> int:
@@ -75,12 +96,13 @@ def cmd_duplicates(args: argparse.Namespace) -> int:
 
 
 def cmd_maintenance(args: argparse.Namespace) -> int:
-    results = maintenance_cost.analyze_repo(args.repo)[: args.limit]
+    everything = maintenance_cost.analyze_repo(args.repo)
+    results = everything[: args.limit]
     if args.json:
         _print_json(results)
     else:
         _print_table(results, ["path", "size", "churn", "fan_in", "cost"])
-    return 0
+    return _gate(everything, "cost", args.fail_over, "maintenance cost")
 
 
 def cmd_architecture(args: argparse.Namespace) -> int:
@@ -201,6 +223,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("hotspots", help="rank files by churn x complexity")
     _add_repo_arg(p)
     p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
+    p.add_argument("--fail-over", type=float, default=None, metavar="SCORE",
+                   help="exit 1 if any file's score is above SCORE (for CI)")
     p.set_defaults(func=cmd_hotspots)
 
     p = sub.add_parser("duplicates", help="rank file pairs by token-shingle similarity")
@@ -212,6 +236,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("maintenance", help="rank files by size x churn x (1 + fan_in)")
     _add_repo_arg(p)
     p.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
+    p.add_argument("--fail-over", type=float, default=None, metavar="COST",
+                   help="exit 1 if any file's cost is above COST (for CI)")
     p.set_defaults(func=cmd_maintenance)
 
     p = sub.add_parser("architecture", help="cycles, god files, and (with --layers) layering violations")
