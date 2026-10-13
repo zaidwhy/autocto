@@ -1,6 +1,6 @@
 # CLAUDE.md - autocto
 
-Repository-health analyzers from git history alone (bug hotspots, duplicated logic, maintenance cost, architectural debt, migration plan). Library and CLI with 160 offline tests; the SWE flagship per `zaid-os/strategy/FLAGSHIPS.md`. Status: all five analyzers and the `autocto` CLI shipped; v0.1.0 is on PyPI as `repo-autocto`.
+Repository-health analyzers from git history alone (bug hotspots, duplicated logic, maintenance cost, architectural debt, migration plan). Library and CLI with 160 offline tests; the SWE flagship per `zaid-os/strategy/FLAGSHIPS.md`. Status: all five analyzers and the `autocto` CLI shipped; v0.2.0 (2026-10-14) is on PyPI as `repo-autocto`.
 Doc of record: `README.md`, `docs/ARCHITECTURE.md` (design and honest limits), `ROADMAP.md` (next steps) and `CONTRIBUTING.md`.
 
 ## Run
