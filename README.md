@@ -13,7 +13,7 @@ history and report where the real engineering risk lives.
 
 Status: all five planned analyzers are shipped (hotspots, duplicates,
 maintenance-cost, architectural-debt, migration-plan), plus a CLI
-(`autocto`) and a v0.1.0 release on PyPI. See [Roadmap](#roadmap) for what's
+(`autocto`) and a v0.2.0 release on PyPI. See [Roadmap](#roadmap) for what's
 next.
 
 ## Quickstart
@@ -444,7 +444,7 @@ not a repo scan. See `CONTRIBUTING.md` for the pattern in detail.
 ## Roadmap
 
 All five Tier 4 analyzers in the ai-ecosystem Night Shift queue
-(PROJECT-GENESIS.md section 9) are shipped, plus the CLI and the v0.1.0
+(PROJECT-GENESIS.md section 9) are shipped, plus the CLI and the v0.2.0
 PyPI release. Nothing further is queued for this repo yet - next
 candidates would come from a fresh Night Shift pass over
 PROJECT-GENESIS.md section 9, or from real usage against other repos in

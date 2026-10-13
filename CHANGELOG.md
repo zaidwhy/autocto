@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.2.0 - 2026-10-14
 
 ### Changed
 - Source walks skip any virtual environment named like `venv` or `.venv` (`.venv312`, `venv-3.14`, `.venv_old`) plus `site-packages`, `.tox` and the mypy, pytest and ruff caches. Before, only the exact names `venv` and `.venv` were skipped, so an oddly named environment was walked and polluted `duplicates`, `maintenance` and `architecture`. The rule lives in one place, `src/autocto/walk.py`, replacing three copies of the same constant (27 tests with the gate below; 160 total).
