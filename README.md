@@ -1,3 +1,5 @@
+<img src=".github/plate.svg" alt="autocto: The file to review first is the one that changes most and branches most. 5 analyzers, no LLM; 160 tests; pipx install repo-autocto. Core strip: 38 commits over 15 weeks, Jul 2026 to Oct 2026." width="100%">
+
 # autocto
 
 [![CI](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml)
@@ -449,3 +451,7 @@ PyPI release. Nothing further is queued for this repo yet - next
 candidates would come from a fresh Night Shift pass over
 PROJECT-GENESIS.md section 9, or from real usage against other repos in
 the fleet.
+
+---
+
+<sub>One plate from the survey at [github.com/zaidwhy](https://github.com/zaidwhy). The strip on the plate above is this repository's own commit history, one band per week.</sub>
