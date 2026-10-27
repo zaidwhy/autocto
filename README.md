@@ -1,4 +1,7 @@
-<img src=".github/plate.svg" alt="autocto: The file to review first is the one that changes most and branches most. 5 analyzers, no LLM; 162 tests; pipx install repo-autocto. Core strip: 38 commits over 15 weeks, Jul 2026 to Oct 2026." width="100%">
+<picture>
+<source media="(max-width: 600px)" srcset=".github/plate-narrow.svg">
+<img src=".github/plate.svg" alt="autocto: The file to review first is the one that changes most and branches most. 5 analyzers, no LLM; 162 tests; pipx install repo-autocto. Core strip: 40 commits over 17 weeks, Jul 2026 to Oct 2026." width="100%">
+</picture>
 
 # autocto
 
