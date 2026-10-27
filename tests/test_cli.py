@@ -142,6 +142,18 @@ def test_plan_missing_file_is_a_clean_error(tmp_path, capsys):
     assert "does not exist" in capsys.readouterr().err
 
 
+def test_plan_given_a_directory_is_a_clean_error(tmp_path, capsys):
+    assert run("plan", str(tmp_path)) == 2
+    assert "is a directory; pass the proposal JSON file" in capsys.readouterr().err
+
+
+def test_plan_given_a_non_utf8_file_is_a_clean_error(tmp_path, capsys):
+    proposal = tmp_path / "proposal.json"
+    proposal.write_bytes(b"\xff\xfe\x00{")
+    assert run("plan", str(proposal)) == 2
+    assert "is not UTF-8 text" in capsys.readouterr().err
+
+
 def _top(cmd: str, repo: Path, capsys, field: str) -> float:
     run(cmd, str(repo), "--json", "--limit", "1")
     return json.loads(capsys.readouterr().out)[0][field]

@@ -151,8 +151,17 @@ class _ProposalError(ValueError):
 
 
 def _load_proposal(path: Path) -> tuple[str, str, list[migration_plan.ProposedChange]]:
+    # Checked up front because Windows reports reading a directory as "Permission denied".
+    if path.is_dir():
+        raise _ProposalError(f"{path} is a directory; pass the proposal JSON file")
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise _ProposalError(f"{path} is not UTF-8 text") from exc
+    except OSError as exc:
+        raise _ProposalError(f"{path} is not a readable file ({exc.strerror})") from exc
+    try:
+        data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise _ProposalError(f"{path} is not valid JSON ({exc})") from exc
     if not isinstance(data, dict) or not isinstance(data.get("title"), str) or not data["title"]:
@@ -202,7 +211,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
         title, rationale, changes = _load_proposal(args.proposal)
         plan = migration_plan.build_migration_plan(title, changes, rationale=rationale)
     except (_ProposalError, migration_plan.CycleError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        print(f"error: {exc}", file=sys.stderr)  # craft-guard: allow tell-generic-error because every _ProposalError and CycleError message names the file or change id and the fix
         return 2
     if args.json:
         _print_json(plan)
@@ -263,14 +272,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     target = getattr(args, "repo", None) or getattr(args, "proposal", None)
     if not target.exists():
-        print(f"error: {target} does not exist", file=sys.stderr)
+        print(f"error: {target} does not exist; check the path", file=sys.stderr)
         return 2
     try:
         return args.func(args)
     except subprocess.CalledProcessError as exc:
         if exc.cmd and exc.cmd[0] != "git":
             raise
-        print(f"error: {args.repo} is not a git repository ({args.command} reads git history)", file=sys.stderr)
+        print(f"error: {args.repo} is not a git repository ({args.command} reads git history); run it on a git checkout", file=sys.stderr)
         return 2
 
 

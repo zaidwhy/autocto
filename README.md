@@ -1,4 +1,4 @@
-<img src=".github/plate.svg" alt="autocto: The file to review first is the one that changes most and branches most. 5 analyzers, no LLM; 160 tests; pipx install repo-autocto. Core strip: 38 commits over 15 weeks, Jul 2026 to Oct 2026." width="100%">
+<img src=".github/plate.svg" alt="autocto: The file to review first is the one that changes most and branches most. 5 analyzers, no LLM; 162 tests; pipx install repo-autocto. Core strip: 38 commits over 15 weeks, Jul 2026 to Oct 2026." width="100%">
 
 # autocto
 
@@ -6,7 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/repo-autocto.svg)](https://pypi.org/project/repo-autocto/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-160%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-162%20passing-brightgreen)](tests/)
 
 Automated CTO: repository health analyzers that read a codebase and its git
 history and report where the real engineering risk lives.

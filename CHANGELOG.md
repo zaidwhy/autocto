@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- `autocto plan` given a directory or a non-UTF-8 file printed a `PermissionError` or `UnicodeDecodeError` traceback; it now prints one `error:` line naming the problem and exits 2, like every other bad proposal (2 regression tests; 162 total).
+
 ## v0.2.0 - 2026-10-14
 
 ### Changed
