@@ -55,7 +55,7 @@ Every module exposes pure functions plus one `analyze_repo` that does the file a
 | Architectural debt | `architectural_debt.py` | import graph, cycles, god files, layering |
 | Migration plan | `migration_plan.py` | ordering proposed changes, markdown rendering |
 | CLI | `cli.py` | argument parsing, table and JSON output |
-| Tests | `tests/` | 110 tests, including end to end against a real temporary git repo |
+| Tests | `tests/` | 162 tests, including end to end against a real temporary git repo |
 
 ## Failure modes
 
@@ -86,7 +86,7 @@ The tool reads a repository and prints a report. It never executes repository co
 
 ## Observability
 
-Output is the observability: the report itself, with `--json` for machines. The deterministic ordering means two runs on the same commit can be diffed. Errors are not yet polished: a failing `git` call surfaces as a raw traceback.
+Output is the observability: the report itself, with `--json` for machines. The deterministic ordering means two runs on the same commit can be diffed. CLI errors are one `error:` line and exit code 2 (not a git repository, malformed plan proposal); library callers still see the raw exception.
 
 ## Cost
 
