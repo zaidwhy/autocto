@@ -1,0 +1,10 @@
+build==1.6.1
+colorama==0.4.6
+iniconfig==2.3.0
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0
+pyproject_hooks==1.3.3
+pytest==9.1.1
+-e git+https://github.com/zaidwhy/autocto.git@579ee5250b0e388ac84114bdc7138ed8fb7a72d1#egg=repo_autocto
+ruff==0.16.9
