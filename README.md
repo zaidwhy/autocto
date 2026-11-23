@@ -5,6 +5,8 @@
 
 # autocto
 
+[![A roadside cut through folded rock strata curving upward, with an orange survey stake in the rubble at its base. AI-generated illustration.](docs/media/hero.webp)](docs/media/hero-loop.mp4)
+
 [![CI](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml/badge.svg)](https://github.com/zaidwhy/autocto/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/repo-autocto.svg)](https://pypi.org/project/repo-autocto/)
 
